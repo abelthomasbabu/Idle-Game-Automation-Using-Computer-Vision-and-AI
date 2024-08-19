@@ -1,0 +1,6 @@
+Evaluation Results:
+Total Steps: 1400
+Final Cumulative Reward: 1104.40
+Final Score: 50.00
+Average Reward per 100 steps: 84.82
+Score Increase: 50.00
