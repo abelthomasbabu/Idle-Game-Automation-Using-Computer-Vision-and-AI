@@ -36,6 +36,6 @@ python evaluateVisionModel.py
 ## Notes
 
 - Ensure the game window is visible and active when running the scripts.
-- While testing the vision model, the window generated could be infinite. To avoid this a multi-monitor setup is recommended.
+- While testing the vision model, the window generated could be infinite. To avoid this, a multi-monitor setup is recommended.
 - The AI uses screen capture and mouse clicks to interact with the game, so avoid using the computer for other tasks during training or gameplay.
 - The project is trained on Cookie Clicker and has been tested on Universal Paper Clips and Kiwi Clicker.
