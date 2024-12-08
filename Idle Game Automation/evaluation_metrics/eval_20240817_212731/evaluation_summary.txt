@@ -1,0 +1,7 @@
+Evaluation Results:
+Total Steps: 1172
+Final Cumulative Reward: 945.24
+Final Score: 0.00
+Average Reward per step: 0.81
+Score Increase: 0.00
+Total Evaluation Time: 4.77 seconds

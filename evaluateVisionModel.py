@@ -11,26 +11,24 @@ model = YOLO('vision_models/FinalModel198Epochs.pt')
 window_name = 'GameObjectDetection'
 cv.namedWindow(window_name, cv.WINDOW_NORMAL)
 
-# Shared variables
 frame = None
 detected_frame = None
 frame_lock = threading.Lock()
 fps = 0
-best_score_width = 0  # Variable to store the best score width
+best_score_width = 0
 
 def screen_capture():
     global frame, fps
-    sct = mss.mss()  # Create a new mss object inside the thread
+    sct = mss.mss()
     while True:
         start_time = time.time()
         
-        monitor = sct.monitors[2]
+        monitor = sct.monitors[1] # The monitor number to be captured
         screenshot = sct.grab(monitor)
         with frame_lock:
             frame = np.array(screenshot)
             frame = cv.cvtColor(frame, cv.COLOR_BGRA2BGR)
 
-        # Calculate FPS
         fps = 1 / (time.time() - start_time)
 
 def object_detection():
@@ -50,6 +48,7 @@ def object_detection():
                 for box in result.boxes:
                     conf = box.conf.cpu().numpy()[0]
                     
+                    # Confidence kept low for testing purposes
                     if conf < 0.1:
                         continue  
 
@@ -57,10 +56,10 @@ def object_detection():
                     cls = int(box.cls.cpu().numpy()[0])
                     label = model.names[cls]
 
-                    # Calculate width
+                    # Calculate width of bounding box
                     width = x2 - x1
 
-                    # Check for the "score" class and select the bounding box with the largest width
+                    # Check for the score class and select the bounding box with the largest width to avoid multiple bounding boxes
                     if label == 'score' and width > max_score_width:
                         max_score_width = width
                         best_score_box = (int(x1), int(y1), int(x2), int(y2), label, conf)
@@ -70,15 +69,12 @@ def object_detection():
                         cv.rectangle(input_frame, (int(x1), int(y1)), (int(x2), int(y2)), (255, 0, 0), 2)
                         cv.putText(input_frame, f'{label} {conf:.2f}', (int(x1), int(y1) - 10), cv.FONT_HERSHEY_SIMPLEX, 0.9, (255, 0, 0), 2)
 
-            # Draw only the best "score" bounding box
+            # Draw only the best score bounding box
             if best_score_box:
                 x1, y1, x2, y2, label, conf = best_score_box
                 cv.rectangle(input_frame, (x1, y1), (x2, y2), (255, 255, 0), 2)
                 cv.putText(input_frame, f'{label} {conf:.2f}', (x1, y1 - 10), cv.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 0), 2)
                 
-                # Store the best score width to be used later as a reward
-                best_score_width = max_score_width
-
             with frame_lock:
                 detected_frame = input_frame.copy()
 
@@ -96,7 +92,7 @@ while True:
     # Display the latest detected frame
     with frame_lock:
         if detected_frame is not None:
-            # Display FPS on the frame
+            # To display FPS on the frame
             cv.putText(detected_frame, f'FPS: {fps:.2f}', (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             cv.imshow(window_name, detected_frame)
 
@@ -104,5 +100,4 @@ while True:
     if cv.waitKey(1) & 0xFF == ord('q'):
         break
 
-# Ensure to close the window properly
 cv.destroyAllWindows()

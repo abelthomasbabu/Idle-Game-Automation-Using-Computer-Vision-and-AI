@@ -1,0 +1,9 @@
+torch
+numpy
+matplotlib
+pyautogui
+ultralytics
+gymnasium
+stable-baselines3
+opencv-python
+mss

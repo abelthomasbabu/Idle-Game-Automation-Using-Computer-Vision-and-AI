@@ -8,11 +8,12 @@ from src.detector import VisionCapture
 class IdleGameEnvironment(gym.Env):
     def __init__(self, vision_model_path, game_name='IdleGame'):
         super().__init__()
+        # Initialise the vision capture system
         self.vision_capture = VisionCapture(vision_model_path)
         self.game_name = game_name
         
         # Define action and observation space
-        self.action_space = spaces.Discrete(4)  # Assuming 4 possible actions (clickable buttons)
+        self.action_space = spaces.Discrete(4)  # 4 possible actions (clickable buttons)
         self.observation_space = spaces.Box(low=0, high=1920, shape=(5,), dtype=np.float32)
         
         self.last_score = 0
@@ -23,7 +24,6 @@ class IdleGameEnvironment(gym.Env):
 
     def step(self, action):
         self.step_count += 1
-        # Ensure action is an integer
         action = int(action)
         
         print(f"Step {self.step_count}: Taking action {action}")
@@ -38,15 +38,13 @@ class IdleGameEnvironment(gym.Env):
         reward = self.calculate_reward(observation, action)
         self.total_reward += reward
         
-        # Assume the episode is never done in this example; modify if needed
         done = False
         
-        # Collect additional info, e.g., the current score
+        # Collect additional info like the current score
         info = {'score': observation[-1]}
         
         print(f"Step {self.step_count}: Reward = {reward}, Total Reward = {self.total_reward}, Score = {info['score']}, Observation = {observation}")
         
-        # Return the observation, reward, done flag, truncated flag, and info
         return observation, reward, done, False, info
 
     def reset(self, seed=None, options=None):
@@ -74,9 +72,8 @@ class IdleGameEnvironment(gym.Env):
         # Capture the screen and detect objects
         _, detections = self.vision_capture.get_detected_frame_and_score_width()
     
-        # Ensure detections is a list or another iterable
         if not isinstance(detections, list):
-            detections = []  # Fallback to an empty list if detections is not as expected
+            detections = []  # Fallback to an empty list if detections is not as expected to avoid crashing
     
         # Filter detections for clickable objects
         clickable_detections = [
@@ -85,7 +82,7 @@ class IdleGameEnvironment(gym.Env):
     
         print(f"Clickable detections: {clickable_detections}")
     
-        # Perform the action by clicking on the appropriate detection
+        # Perform the action by clicking on the appropriate detection at the center of bounding boxes
         if action < len(clickable_detections):
             x1, y1, x2, y2, _, _ = clickable_detections[action]
             center_x, center_y = int((x1 + x2) / 2), int((y1 + y2) / 2)
@@ -100,7 +97,7 @@ class IdleGameEnvironment(gym.Env):
     
         # Ensure detections is a list or iterable structure
         if not isinstance(detections, list):
-            detections = []  # Fallback to an empty list if detections is not as expected
+            detections = [] 
     
         # Convert the detections to a state
         state = self.detections_to_state(detections)
@@ -114,12 +111,12 @@ class IdleGameEnvironment(gym.Env):
         # Process each detection
         for det in detections:
             if isinstance(det, np.ndarray):
-                det = tuple(det.tolist())  # Convert to a tuple after converting to a list
+                det = tuple(det.tolist()) 
             
             if not isinstance(det, (tuple, list)) or len(det) != 6:
-                continue  # Skip if detection is not in expected format
+                continue
 
-            x1, y1, x2, y2, conf, cls = det
+            x1, x2, y1, y2, conf, cls = det
             class_name = self.vision_capture.model.names[int(cls)]
         
             # Set the state for clickable objects
@@ -130,7 +127,6 @@ class IdleGameEnvironment(gym.Env):
             elif class_name == 'score':
                 score = x2 - x1
 
-        # Use the score directly without normalisation
         state[-1] = score
 
         return state
@@ -139,15 +135,13 @@ class IdleGameEnvironment(gym.Env):
         current_score_width = observation[-1]
         width_increase = current_score_width - self.last_score
 
-        # Apply a scaling factor to the width increase as the pixel width would be very small
+        # Apply a scaling factor to the width increase as the pixel width would be very small and to reflect the time taken to achieve the width increase
         scaling_factor = 0.5
         scaled_width_increase = width_increase * scaling_factor
 
-        # Ensure no negative rewards
+        # Ensure no negative rewards as the score itself is a resource
         reward = max(scaled_width_increase, 0)
 
-        # Cumulative Reward for Resource Management
-        # Adjust these values to encourage more diverse actions
         if action == self.clickable_classes.index('upgrade_btn'):
             reward += 2.0  # Increased from 0.8
         if action == self.clickable_classes.index('building_btn'):
@@ -157,12 +151,12 @@ class IdleGameEnvironment(gym.Env):
         if action == self.clickable_classes.index('primary_btn'):
             reward += 0.05  # Decreased from 0.1
 
-        # Exploration Reward with increased impact
-        exploration_bonus = 2 / (self.action_history[action] + 1)  # Increased from 1
+        # Exploration Reward
+        exploration_bonus = 2 / (self.action_history[action] + 1)
         reward += exploration_bonus
 
-        # New: Diversity bonus
-        unique_actions = len(set(list(self.action_history.values())[-5:]))  # Last 5 actions
+        # Diversity bonus
+        unique_actions = len(set(list(self.action_history.values())[-5:]))
         diversity_bonus = unique_actions * 0.3
         reward += diversity_bonus
 
